@@ -1,0 +1,48 @@
+# --- 密钥与配置（绝不提交） ---
+.env
+.env.local
+*.env
+!env.example
+.env.example.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- 本地模型（下载产物，不留仓库） ---
+models/
+
+# --- 向量数据 / 数据文件 ---
+data/
+chroma/
+vectorstore/
+*.db
+*.sqlite3
+*.sqlite
+
+# --- 前端 / Node ---
+node_modules/
+frontend/dist/
+
+# --- IDE / 系统 ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- 日志 / 运行产物 ---
+logs/
+*.log
+srv_out*.txt
+srv_err*.txt

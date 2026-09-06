@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>智服通 · 企业 IT 技术支持</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%230a84ff'/><stop offset='1' stop-color='%235e5ce6'/></linearGradient></defs><rect width='100' height='100' rx='26' fill='url(%23g)'/><text x='50' y='68' font-size='52' font-weight='700' text-anchor='middle' fill='white' font-family='PingFang SC,Microsoft YaHei,sans-serif'>智</text></svg>">
+</head>
+<body>
+  <div class="app">
+
+    <!-- 顶部玻璃导航 -->
+    <header id="topbar" class="topbar glass-nav">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button id="side-open" class="hamburger side-open-btn" aria-label="历史会话">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        </button>
+        <a class="brand" href="/">
+          <span class="brand-mark">智</span>
+          <span>
+            <span class="brand-name">智服通</span>
+            <span class="brand-tag">企业 IT 技术支持</span>
+          </span>
+        </a>
+      </div>
+      <div class="topbar-actions">
+        <span style="display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:550; color:var(--text-2); background:rgba(0,0,0,0.04); padding:6px 13px; border-radius:var(--r-pill);">
+          <span class="pulse-dot"></span>在线
+        </span>
+        <button id="new-chat-btn" class="btn btn-ghost" style="height:36px; padding:0 16px; font-size:13px;">新会话</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- 会话侧栏 -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-head">最近会话</div>
+        <div id="side-list" class="sidebar-list"></div>
+      </aside>
+      <div id="side-overlay" class="side-overlay"></div>
+
+      <!-- 聊天区 -->
+      <section class="chat">
+        <div id="chat-scroll" class="chat-scroll">
+          <div id="chat-inner" class="chat-inner"></div>
+        </div>
+
+        <!-- 输入栏 -->
+        <div class="composer-bar">
+          <form id="composer" class="composer">
+            <textarea id="composer-input" rows="1"
+              placeholder="描述您遇到的问题，例如：如何修改登录密码？…"></textarea>
+            <button id="send-btn" class="send-btn" type="button" aria-label="发送">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/js/chat.js"></script>
+</body>
+</html>

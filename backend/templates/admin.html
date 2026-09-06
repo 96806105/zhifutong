@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>智服通 · 管理台</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header id="topbar" class="topbar glass-nav" style="max-width:1080px; margin:0 auto; padding:0 var(--pad-x);">
+    <a class="brand" href="/">
+      <span class="brand-mark">智</span>
+      <span class="brand-name">智服通 · 管理台</span>
+    </a>
+    <div class="topbar-actions">
+      <a href="/" class="btn btn-ghost" style="height:36px; padding:0 16px; font-size:13px;">← 返回客服</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div class="eyebrow"><span class="pulse-dot"></span>SYSTEM · ADMIN</div>
+      <h1>服务概览</h1>
+      <p>知识库索引、会话与工单的运行视图。所有数据均来自本地向量库与 SQLite。</p>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>window.ADMIN_TOKEN = "{{ app_secret | e }}";</script>
+    <div style="display:none"></div>
+
+    <!-- 统计卡片 -->
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">知识库索引</div>
+            <div class="panel-sub">ChromaDB · bge-small-zh-v1.5</div>
+          </div>
+          <button id="rebuild-btn" class="btn btn-ghost" style="height:34px; padding:0 14px; font-size:12.5px;">重建索引</button>
+        </div>
+        <div class="panel-body" style="padding-top:8px;">
+          <div class="stat-row"><span>文档数</span><span class="num" id="st-docs">—</span></div>
+          <div class="stat-row"><span>片段数</span><span class="num" id="st-chunks">—</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">人机会话</div>
+            <div class="panel-sub">最近会话状态</div>
+          </div>
+        </div>
+        <div class="panel-body" style="padding-top:8px;">
+          <div class="stat-row" style="padding-left:0; padding-right:0;"><span>会话总数</span><span class="num" id="st-sessions">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最近工单 -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title" style="padding-bottom:10px;">最近工单</div>
+        </div>
+      </div>
+      <table class="tbl">
+        <thead>
+          <tr><th>工单号</th><th>会话</th><th>原因</th><th>状态</th><th class="time">创建时间</th></tr>
+        </thead>
+        <tbody id="ticket-body">
+          <tr><td colspan="5" style="color:var(--text-3); text-align:center; padding:22px;">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    "use strict";
+    const $ = (s) => document.querySelector(s);
+    const toast = (t) => {
+      const el = $("#toast");
+      el.textContent = t;
+      el.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove("show"), 2400);
+    };
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    const fmt = (iso) => { if (!iso) return "—"; const d = new Date(iso); const p = (n)=>String(n).padStart(2,"0"); return p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); };
+    const HDR = { "X-Admin-Token": window.ADMIN_TOKEN || "" };
+
+    async function load() {
+      try {
+        const st = await (await fetch("/api/kb/stats", { headers: HDR })).json();
+        $("#st-docs").textContent = st.docs ?? 0;
+        $("#st-chunks").textContent = st.chunks ?? 0;
+      } catch (_) { }
+
+      try {
+        const ss = await (await fetch("/api/admin/sessions?limit=200", { headers: HDR })).json();
+        $("#st-sessions").textContent = ss.sessions.length;
+      } catch (_) { }
+
+      try {
+        const r = await (await fetch("/api/admin/tickets?limit=30", { headers: HDR })).json();
+        const body = $("#ticket-body");
+        if (!r.tickets || !r.tickets.length) {
+          body.innerHTML = '<tr><td colspan="5" style="color:var(--text-3); text-align:center; padding:22px;">暂无工单</td></tr>';
+          return;
+        }
+        body.innerHTML = r.tickets.map((t) => `
+          <tr>
+            <td class="mono" style="font-weight:600; color:var(--accent-link);">${esc(t.id)}</td>
+            <td class="mono">${esc(t.session_id?.slice(0, 12))}…</td>
+            <td style="color:var(--text-2); font-size:13px;">${esc(t.reason || "—")}</td>
+            <td><span class="status-pill status-${t.status === "open" ? "open" : "done"}">${t.status === "open" ? "待处理" : "已关闭"}</span></td>
+            <td class="time">${fmt(t.created_at)}</td>
+          </tr>`).join("");
+      } catch (_) { }
+    }
+
+    $("#rebuild-btn").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = "重建中…";
+      try {
+        const r = await (await fetch("/api/kb/rebuild", { method: "POST", headers: HDR })).json();
+        toast(r.message || "重建完成");
+        load();
+      } catch (_) {
+        toast("重建失败，请查看服务日志");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "重建索引";
+      }
+    });
+
+    load();
+  })();
+  </script>
+</body>
+</html>

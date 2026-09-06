@@ -1,0 +1,15 @@
+services:
+  zhifutong:
+    build: .
+    container_name: zhifutong
+    ports:
+      - "8000:8000"
+    volumes:
+      # 挂载本地模型目录（需先运行 python scripts/download_model.py）
+      - ./models:/app/models
+      # 挂载数据与知识库，便于持久化与热更新
+      - ./data:/app/data
+      - ./knowledge_base:/app/knowledge_base
+    env_file:
+      - .env
+    restart: unless-stopped

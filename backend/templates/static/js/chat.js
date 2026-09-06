@@ -26,6 +26,7 @@
     greeting: "问候",
     transfer: "已转人工",
     fallback: "未命中",
+    human: "人工客服",
     none: "",
   };
 
@@ -124,6 +125,7 @@
       appendMeta(bot, meta.action, meta.confidence, meta.sources, meta.ticket_id);
       if (meta.action === "transfer" && meta.ticket_id) {
         toast(`已转人工，工单号 ${meta.ticket_id}`);
+        startHumanPolling(sessionId);
       }
       reply = finalReply;
     } else if (!hasDelta && !reply) {
@@ -131,6 +133,45 @@
     }
 
     refreshSidebar();
+  }
+
+  /* ── 人工回复轮询（转人工后监听） ── */
+  let pollTimer = null;
+  let polledLastId = 0;
+
+  function startHumanPolling(sid) {
+    stopHumanPolling();
+    polledLastId = 0;
+    let polls = 0;
+    pollTimer = setInterval(async () => {
+      if (!sid) return;
+      polls += 1;
+      if (polls > 60) { stopHumanPolling(); return; }  // 最多轮询 3 分钟
+      try {
+        const res = await fetch("/api/history?session_id=" + encodeURIComponent(sid));
+        const j = await res.json();
+        const msgs = j.messages || [];
+        // 找到比已展示更新且属于人工助手（action==human）的消息
+        const humanMsgs = msgs.filter(
+          (m) => m.action === "human" && m.content && msgs.indexOf(m) > polledLastId
+        );
+        humanMsgs.forEach((m) => {
+          const bot = addBotBubble(m.content);
+          bot.querySelector(".msg-avatar").classList.add("avatar-human");
+          bot.querySelector(".msg-avatar").textContent = "人";
+          const tag = document.createElement("span");
+          tag.className = "act-tag human";
+          tag.textContent = "人工回复";
+          bot.querySelector(".msg-meta").appendChild(tag);
+        });
+        if (msgs.length) polledLastId = msgs.length - 1;
+        if (humanMsgs.length) stopHumanPolling();
+      } catch (_) { /* 网络抖动忽略 */ }
+    }, 3000);
+  }
+
+  function stopHumanPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
 
   /* ── 消息渲染 ── */
@@ -264,6 +305,7 @@
   }
 
   async function resetChat() {
+    stopHumanPolling();
     showEmptyLoading();
     const j = await startSession();
     sessionId = j.session_id;

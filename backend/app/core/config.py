@@ -72,6 +72,20 @@ class Settings(BaseSettings):
     # --- 转人工 ---
     transfer_fail_threshold: int = 3
 
+    # --- 飞书真实人工接线（双向）---
+    # 开启后，转人工会把求助信息推给飞书；人工在飞书里回复，
+    # 长连接进程收到消息后回写到会话。
+    lark_enabled: bool = False
+    lark_app_id: str = ""
+    lark_app_secret: str = ""
+    # 通知接收方（任一即可）：
+    #   lark_notify_chat_id  群聊/单聊 ID（推荐：把机器人拉进一个群）
+    #   lark_notify_open_id  指定用户 open_id（机器人单聊）
+    lark_notify_chat_id: str = ""
+    lark_notify_open_id: str = ""
+    # 人工客服联系电话（展示用，非必填）
+    lark_contact_phone: str = ""
+
     # --- 会话 / 记忆 ---
     session_history_rounds: int = 6
 

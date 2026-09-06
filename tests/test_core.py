@@ -132,5 +132,33 @@ class TestStorage:
         assert any(t["id"] == tid for t in tickets)
 
 
+# ── 人工回复回写（飞书接线） ────────────────────────────────────────────
+class TestHumanReply:
+    def test_latest_open_ticket_binding(self):
+        init_db = getattr(storage_mod, "init_db", lambda: None)
+        init_db()
+        sid = storage_mod.create_session()
+        tid = storage_mod.create_ticket(sid, reason="人工接线测试")
+        assert storage_mod.get_ticket_session(tid) == sid
+
+        latest = storage_mod.get_latest_open_ticket()
+        assert latest and latest["id"] == tid
+        assert latest["session_id"] == sid
+
+    def test_human_reply_written_and_ticket_closed(self):
+        init_db = getattr(storage_mod, "init_db", lambda: None)
+        init_db()
+        sid = storage_mod.create_session()
+        tid = storage_mod.create_ticket(sid, reason="人工接线测试")
+        storage_mod.add_human_reply(sid, "已为您重置密码，请查收邮件。", ticket_id=tid)
+
+        msgs = storage_mod.get_session_messages(sid)
+        last = msgs[-1]
+        assert last["role"] == "assistant"
+        assert last["action"] == "human"
+        # 工单应标记为已处理（done）
+        assert storage_mod.get_ticket_status(tid) == "done"
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))

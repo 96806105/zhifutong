@@ -113,13 +113,25 @@ def process_message(
 
 
 def _do_transfer(session_id: str, memory, user_text: str, reason: str) -> dict:
-    """执行转人工：生成工单 + 记录。"""
+    """执行转人工：生成工单 + 记录 + （可选）推送飞书人工。"""
     ticket_id = storage.create_ticket(session_id, reason=reason)
     storage.set_session_status(session_id, "transferred")
+
+    # 真实人工接线：推送到飞书（若已配置）
+    feishu_ack = False
+    try:
+        from ..im.feishu import notify_human
+
+        feishu_ack = notify_human(session_id, user_text, ticket_id)
+    except Exception:  # noqa: BLE001 - 推送失败不影响转人工主流程
+        feishu_ack = False
+
     reply = (
         "已为您转接人工客服。我们的技术支持人员会尽快处理您的问题。\n"
         f"您的工单号为：**{ticket_id}**，请妥善保存以便后续查询。"
     )
+    if feishu_ack:
+        reply += "\n\n（已通过飞书通知人工客服，回复后将在此同步）"
     _persist_pair(
         session_id, memory, user_text, reply, action="transfer", confidence=0.0
     )

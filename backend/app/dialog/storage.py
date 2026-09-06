@@ -174,3 +174,71 @@ def get_session_messages(session_id: str) -> list[dict[str, Any]]:
         }
         for m in rows
     ]
+
+
+def get_latest_open_ticket() -> dict[str, Any] | None:
+    """获取最近一个「待人工处理」的工单（供人工回复定位会话）。"""
+    with _db() as db:
+        row = (
+            db.execute(
+                select(TicketRecord)
+                .where(TicketRecord.status == "open")
+                .order_by(TicketRecord.created_at.desc())
+            )
+            .scalars()
+            .first()
+        )
+        if not row:
+            return None
+        return {
+            "id": row.id,
+            "session_id": row.session_id,
+            "reason": row.reason,
+            "status": row.status,
+        }
+
+
+def get_ticket_session(ticket_id: str) -> str | None:
+    """按工单号定位所属会话。"""
+    with _db() as db:
+        row = db.get(TicketRecord, ticket_id)
+        return row.session_id if row else None
+
+
+def get_ticket_status(ticket_id: str) -> str | None:
+    """查询工单状态：open / done（不存在返回 None）。"""
+    with _db() as db:
+        row = db.get(TicketRecord, ticket_id)
+        return row.status if row else None
+
+
+def mark_ticket_done(ticket_id: str) -> None:
+    """将工单标记为已处理。"""
+    with _db() as db:
+        ticket = db.get(TicketRecord, ticket_id)
+        if ticket:
+            ticket.status = "done"
+            logger.info("ticket %s marked done", ticket_id)
+            db.commit()
+
+
+def add_human_reply(
+    session_id: str, text: str, *, ticket_id: str | None = None
+) -> None:
+    """人工回复回写：作为 assistant 消息写入会话，action=human。"""
+    with _db() as db:
+        db.add(
+            MessageRecord(
+                session_id=session_id,
+                role="assistant",
+                content=text,
+                action="human",
+                confidence=1.0,
+            )
+        )
+        if ticket_id:
+            ticket = db.get(TicketRecord, ticket_id)
+            if ticket:
+                ticket.status = "done"
+        db.commit()
+    logger.info("human reply written to %s", session_id)

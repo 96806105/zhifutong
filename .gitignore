@@ -46,3 +46,5 @@ logs/
 *.log
 srv_out*.txt
 srv_err*.txt
+logs_server*.txt
+run_server.bat

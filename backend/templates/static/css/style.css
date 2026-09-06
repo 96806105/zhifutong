@@ -228,6 +228,8 @@ body {
 }
 .act-tag.transfer { background: var(--heat); }
 .act-tag.fallback { background: var(--text-3); }
+.act-tag.human { background: var(--live); }
+.avatar-human { background: linear-gradient(135deg, #30d158 0%, #0a84ff 100%); }
 
 /* 打字光标 */
 .caret {

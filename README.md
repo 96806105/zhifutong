@@ -53,7 +53,7 @@
 ### 2. 克隆与安装
 
 ```bash
-git clone https://github.com/<your>/zhifutong.git
+git clone https://github.com/96806105/zhifutong.git
 cd zhifutong
 python -m venv .venv
 # Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
